@@ -5,9 +5,15 @@ import { pino } from 'pino';
 import { pinoHttp } from 'pino-http';
 
 import { env } from './config/env.js';
-import { healthRouter } from './router/health.router.js';
+import { healthRouter } from './routes/health.router.js';
+import { authRouter } from './routes/auth.routes.js';
 
-export function createApp() {
+export interface AppOptions {
+  /** Override the login rate limit — used by tests to trigger 429 quickly. */
+  loginRateLimitMax?: number;
+}
+
+export function createApp(options: AppOptions = {}) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -24,6 +30,7 @@ export function createApp() {
   );
 
   app.use('/api/v1', healthRouter());
+  app.use('/api/v1', authRouter(options.loginRateLimitMax ?? 10));
 
   return app;
 }
