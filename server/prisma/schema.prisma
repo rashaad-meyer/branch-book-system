@@ -12,3 +12,76 @@ datasource db {
 // See DESIGN.md for the planned schema, including the exclusion constraint
 // on overlapping appointment time ranges (added via a raw SQL migration,
 // since Prisma's schema DSL cannot express EXCLUDE constraints).
+
+enum AppointmentStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+// User model for branch staff
+model User {
+  id           String @id @default(uuid(7))
+  email        String @unique
+  passwordHash String
+  fullName     String
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  branchId String
+  branch   Branch @relation(fields: [branchId], references: [id])
+}
+
+model Branch {
+  id String @id @default(uuid(7))
+
+  branchStaffUsers User[]
+  appointments     Appointment[]
+  services         Service[]
+  timezone         String        @default("Africa/Johannesburg")
+
+  name           String
+  // Weekly operating hours, keyed by lowercase weekday. A missing key = closed
+  // that day. Times are branch-local "HH:mm" strings, converted to UTC by the
+  // availability calculator using `timezone`. Validated with zod at the
+  // seed/API boundary. Example:
+  // { "mon": ["08:00", "17:00"], "tue": ["08:00", "17:00"], "sat": ["08:00", "12:00"] }
+  operatingHours Json    @default("{\"mon\": [\"08:00\", \"17:00\"], \"tue\": [\"08:00\", \"17:00\"], \"wed\": [\"08:00\", \"17:00\"], \"thu\": [\"08:00\", \"17:00\"], \"fri\": [\"08:00\", \"17:00\"], \"sat\": [\"08:00\", \"12:00\"]}")
+  address        String?
+}
+
+model Service {
+  id String @id @default(uuid(7))
+
+  branchId     String
+  branch       Branch        @relation(fields: [branchId], references: [id])
+  appointments Appointment[]
+
+  name            String
+  durationMinutes Int
+
+  @@unique([branchId, id])
+}
+
+model Appointment {
+  id String @id @default(uuid(7))
+
+  branchId  String
+  serviceId String
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  service   Service @relation(fields: [branchId, serviceId], references: [branchId, id])
+
+  status        AppointmentStatus @default(CONFIRMED)
+  reference     String            @unique
+  customerName  String
+  customerEmail String
+  customerPhone String?
+
+  startsAt DateTime @db.Timestamptz(3)
+  endsAt   DateTime @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([customerEmail])
+  @@index([branchId, startsAt])
+}
