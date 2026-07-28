@@ -10,7 +10,7 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        projectService: { allowDefaultProject: ['prisma.config.ts'] },
+        projectService: { allowDefaultProject: ['prisma.config.ts', 'prisma/seed.ts'] },
         tsconfigRootDir: import.meta.dirname,
       },
     },
