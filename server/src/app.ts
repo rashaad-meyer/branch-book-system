@@ -7,6 +7,7 @@ import { pinoHttp } from 'pino-http';
 import { env } from './config/env.js';
 import { healthRouter } from './routes/health.router.js';
 import { authRouter } from './routes/auth.routes.js';
+import { errorHandler } from './middleware/error-handler.js';
 
 export interface AppOptions {
   /** Override the login rate limit — used by tests to trigger 429 quickly. */
@@ -31,6 +32,8 @@ export function createApp(options: AppOptions = {}) {
 
   app.use('/api/v1', healthRouter());
   app.use('/api/v1', authRouter(options.loginRateLimitMax ?? 10));
+
+  app.use(errorHandler);
 
   return app;
 }
