@@ -1,0 +1,13 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Domain models (Branch, Service, Appointment) go here.
+// See DESIGN.md for the planned schema, including the exclusion constraint
+// on overlapping appointment time ranges (added via a raw SQL migration,
+// since Prisma's schema DSL cannot express EXCLUDE constraints).
