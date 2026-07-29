@@ -225,6 +225,26 @@ export async function cancelAppointmentByReference(
   return cancelFetchedAppointment(prisma, appointment, notifier);
 }
 
+/**
+ * Staff cancel: scoped to the staff member's own branch — an appointment
+ * outside it is a 404, indistinguishable from a nonexistent id.
+ */
+export async function cancelAppointmentForBranch(
+  prisma: PrismaClient,
+  appointmentId: string,
+  branchId: string,
+  notifier: Notifier = consoleNotifier,
+) {
+  const appointment = await prisma.appointment.findFirst({
+    where: { id: appointmentId, branchId },
+    include: { branch: { select: { name: true } }, service: { select: { name: true } } },
+  });
+  if (!appointment) {
+    throw new NotFoundError('Appointment not found', 'APPOINTMENT_NOT_FOUND');
+  }
+  return cancelFetchedAppointment(prisma, appointment, notifier);
+}
+
 export async function getAppointmentByReference(prisma: PrismaClient, reference: string) {
   const appointment = await prisma.appointment.findUnique({
     where: { reference },

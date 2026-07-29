@@ -67,6 +67,12 @@ export const createAppointmentSchema = z.object({
 
 export type CreateAppointmentSchema = z.infer<typeof createAppointmentSchema>;
 
+// Unlike the public availability query, no horizon bound: staff may review
+// past days.
+export const staffScheduleQuerySchema = z.object({
+  date: z.iso.date(),
+});
+
 export const referenceParamSchema = z.object({
   reference: z.string().regex(/^[A-HJ-NP-Z2-9]{10}$/, 'Invalid booking reference'),
 });
