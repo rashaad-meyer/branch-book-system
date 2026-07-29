@@ -9,6 +9,7 @@ import { healthRouter } from './routes/health.routes.js';
 import { authRouter } from './routes/auth.routes.js';
 import { branchRouter } from './routes/branch.routes.js';
 import { appointmentRouter } from './routes/appointment.routes.js';
+import { staffRouter } from './routes/staff.routes.js';
 import { errorHandler } from './middleware/error-handler.js';
 
 export interface AppOptions {
@@ -36,6 +37,7 @@ export function createApp(options: AppOptions = {}) {
   app.use('/api/v1', authRouter(options.loginRateLimitMax ?? 10));
   app.use('/api/v1', branchRouter());
   app.use('/api/v1', appointmentRouter());
+  app.use('/api/v1', staffRouter());
 
   app.use(errorHandler);
 
