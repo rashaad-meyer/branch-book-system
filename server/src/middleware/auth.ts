@@ -13,7 +13,7 @@ declare global {
 }
 
 /** Verifies the Bearer JWT and attaches the user id to the request. */
-export const requiredAuth: RequestHandler = (req, _res, next) => {
+export const requireAuth: RequestHandler = (req, _res, next) => {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     throw new UnauthorizedError();

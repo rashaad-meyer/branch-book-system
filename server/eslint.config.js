@@ -14,6 +14,14 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    rules: {
+      // Underscore convention for intentionally unused params, e.g. the
+      // mandatory 4th arg of an Express error handler.
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
   },
   {
     files: ['**/*.js'],

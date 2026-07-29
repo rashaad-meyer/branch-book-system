@@ -3,7 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { prisma } from '../lib/prisma.js';
 import { loginSchema } from '../schemas/index.js';
 import * as authService from '../services/auth.service.js';
-import { authedUserId, requiredAuth } from '../middleware/auth.js';
+import { authedUserId, requireAuth } from '../middleware/auth.js';
 
 export function authRouter(loginRateLimitMax: number) {
   const router = Router();
@@ -24,7 +24,7 @@ export function authRouter(loginRateLimitMax: number) {
     res.json(result);
   });
 
-  router.get('/me', requiredAuth, async (req, res) => {
+  router.get('/me', requireAuth, async (req, res) => {
     const user = await authService.getUser(prisma, authedUserId(req.userId));
     res.json({ user });
   });

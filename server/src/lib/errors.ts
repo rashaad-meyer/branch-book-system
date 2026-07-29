@@ -23,7 +23,7 @@ export class UnauthorizedError extends ApiError {
 
 export class NotFoundError extends ApiError {
   constructor(message = 'Resource not found', code = 'NOT_FOUND') {
-    super(404, code, message)
+    super(404, code, message);
   }
 }
 

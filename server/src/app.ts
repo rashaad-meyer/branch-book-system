@@ -5,8 +5,9 @@ import { pino } from 'pino';
 import { pinoHttp } from 'pino-http';
 
 import { env } from './config/env.js';
-import { healthRouter } from './routes/health.router.js';
+import { healthRouter } from './routes/health.routes.js';
 import { authRouter } from './routes/auth.routes.js';
+import { branchRouter } from './routes/branch.routes.js';
 import { errorHandler } from './middleware/error-handler.js';
 
 export interface AppOptions {
@@ -32,6 +33,7 @@ export function createApp(options: AppOptions = {}) {
 
   app.use('/api/v1', healthRouter());
   app.use('/api/v1', authRouter(options.loginRateLimitMax ?? 10));
+  app.use('/api/v1', branchRouter());
 
   app.use(errorHandler);
 
