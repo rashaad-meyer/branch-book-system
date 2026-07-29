@@ -31,6 +31,21 @@ function isReferenceCollision(error: unknown): boolean {
   );
 }
 
+/**
+ * Under true concurrency Postgres may resolve two overlapping inserts as a
+ * deadlock (40P01) rather than an exclusion violation (23P01), aborting one
+ * transaction as the victim. Prisma surfaces this wrapped (code P2039). The
+ * victim is safe to retry: the winner has since committed — so the retry hits
+ * the exclusion constraint cleanly (23P01 → 409 SLOT_TAKEN) — or rolled back,
+ * in which case the retry succeeds.
+ */
+function isDeadlock(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.message.includes('deadlock detected') || error.message.includes('40P01'))
+  );
+}
+
 export async function createAppointment(
   prisma: PrismaClient,
   input: CreateAppointmentSchema,
@@ -86,7 +101,10 @@ export async function createAppointment(
   // The insert is the concurrency arbiter: the DB exclusion constraint decides
   // who wins a contested slot, regardless of what availability showed earlier.
   const MAX_REFERENCE_RETRIES = 3;
-  for (let attempt = 1; ; attempt++) {
+  const MAX_DEADLOCK_RETRIES = 5;
+  let referenceAttempts = 0;
+  let deadlockAttempts = 0;
+  for (;;) {
     try {
       const appointment = await prisma.appointment.create({
         data: {
@@ -124,7 +142,12 @@ export async function createAppointment(
           'This slot has just been booked by someone else — pick another slot',
         );
       }
-      if (isReferenceCollision(error) && attempt < MAX_REFERENCE_RETRIES) {
+      if (isDeadlock(error) && deadlockAttempts < MAX_DEADLOCK_RETRIES) {
+        deadlockAttempts++;
+        continue; // lost a concurrent race as the deadlock victim; retry resolves cleanly
+      }
+      if (isReferenceCollision(error) && referenceAttempts < MAX_REFERENCE_RETRIES) {
+        referenceAttempts++;
         continue; // astronomically rare; retry with a fresh reference
       }
       throw error;
