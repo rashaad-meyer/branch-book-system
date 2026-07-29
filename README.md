@@ -53,7 +53,18 @@ The client dev server proxies `/api/*` to the backend, so the frontend calls rel
 | `npm run format`    | Format everything with Prettier |
 | `npm run db:up`     | Start the PostgreSQL container  |
 | `npm run db:down`   | Stop the PostgreSQL container   |
+| `npm test`          | Run the server test suite       |
 
 ## Testing
 
-_To be added — vitest (unit + integration with supertest) is the planned setup._
+Server tests run with [vitest](https://vitest.dev):
+
+```bash
+npm test                              # from the root
+npm run test:watch --workspace server # watch mode
+```
+
+Current coverage: unit tests for the availability calculator (slot generation,
+overlap/adjacency semantics, closing-time fit, past-slot filtering, and
+branch-local → UTC timezone conversion). Integration tests (supertest against
+the API, including the concurrent double-booking race) are planned.
