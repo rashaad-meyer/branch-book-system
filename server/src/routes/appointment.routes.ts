@@ -33,5 +33,11 @@ export function appointmentRouter() {
     res.json(appointment);
   });
 
+  router.post('/appointments/:reference/cancel', async (req, res) => {
+    const { reference } = referenceParamSchema.parse(req.params);
+    const appointment = await appointmentService.cancelAppointmentByReference(prisma, reference);
+    res.json(appointment);
+  });
+
   return router;
 }

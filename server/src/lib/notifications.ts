@@ -15,6 +15,7 @@ export interface BookingConfirmation {
  */
 export interface Notifier {
   sendBookingConfirmation(confirmation: BookingConfirmation): Promise<void>;
+  sendBookingCancellation(confirmation: BookingConfirmation): Promise<void>;
 }
 
 export const consoleNotifier: Notifier = {
@@ -24,6 +25,14 @@ export const consoleNotifier: Notifier = {
       `[simulated email → ${c.customerEmail}] ` +
         `Hi ${c.customerName}, your ${c.serviceName} appointment at ${c.branchName} ` +
         `is confirmed for ${c.startsAt.toISOString()}. Reference: ${c.reference}`,
+    );
+  },
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async sendBookingCancellation(c) {
+    console.log(
+      `[simulated email → ${c.customerEmail}] ` +
+        `Hi ${c.customerName}, your ${c.serviceName} appointment at ${c.branchName} ` +
+        `for ${c.startsAt.toISOString()} has been cancelled. Reference: ${c.reference}`,
     );
   },
 };
