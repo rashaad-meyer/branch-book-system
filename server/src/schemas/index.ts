@@ -29,7 +29,7 @@ export const createBranchSchema = z.object({
 
 export const updateBranchSchema = createBranchSchema.partial();
 
-const BOOKING_HORIZON_DAYS = 90;
+export const BOOKING_HORIZON_DAYS = 90;
 
 export const branchAvailabilityQuerySchema = z.object({
   serviceId: z.uuid(),
@@ -50,3 +50,23 @@ export const branchAvailabilityQuerySchema = z.object({
 });
 
 export type BranchAvailabilityQuerySchema = z.infer<typeof branchAvailabilityQuerySchema>;
+
+export const createAppointmentSchema = z.object({
+  branchId: z.uuid(),
+  serviceId: z.uuid(),
+  customerName: z.string().trim().min(1).max(100),
+  customerEmail: z.email(),
+  customerPhone: z
+    .string()
+    .regex(/^\+[1-9]\d{7,14}$/, 'Must be in international format, e.g. +27821234567')
+    .optional(),
+  // endsAt is intentionally not accepted: the server derives it from the
+  // service duration so a client can't claim an arbitrary time window.
+  startsAt: z.iso.datetime({ offset: true }),
+});
+
+export type CreateAppointmentSchema = z.infer<typeof createAppointmentSchema>;
+
+export const referenceParamSchema = z.object({
+  reference: z.string().regex(/^[A-HJ-NP-Z2-9]{10}$/, 'Invalid booking reference'),
+});
