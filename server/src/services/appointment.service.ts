@@ -155,6 +155,76 @@ export async function createAppointment(
   }
 }
 
+type CancellableAppointment = {
+  id: string;
+  status: 'CONFIRMED' | 'CANCELLED';
+  startsAt: Date;
+  reference: string;
+  customerName: string;
+  customerEmail: string;
+  branch: { name: string };
+  service: { name: string };
+};
+
+/**
+ * Shared cancellation core: state-machine rules + atomic transition. The
+ * updateMany is guarded on status so two concurrent cancels can't both
+ * "succeed" — the loser sees count 0.
+ */
+async function cancelFetchedAppointment(
+  prisma: PrismaClient,
+  appointment: CancellableAppointment,
+  notifier: Notifier,
+) {
+  if (appointment.status === 'CANCELLED') {
+    throw new ConflictError('ALREADY_CANCELLED', 'This appointment is already cancelled');
+  }
+  if (appointment.startsAt <= new Date()) {
+    throw new UnprocessableError(
+      'TOO_LATE_TO_CANCEL',
+      'Past or in-progress appointments cannot be cancelled',
+    );
+  }
+
+  const { count } = await prisma.appointment.updateMany({
+    where: { id: appointment.id, status: 'CONFIRMED' },
+    data: { status: 'CANCELLED' },
+  });
+  if (count === 0) {
+    throw new ConflictError('ALREADY_CANCELLED', 'This appointment is already cancelled');
+  }
+
+  try {
+    await notifier.sendBookingCancellation({
+      reference: appointment.reference,
+      customerName: appointment.customerName,
+      customerEmail: appointment.customerEmail,
+      branchName: appointment.branch.name,
+      serviceName: appointment.service.name,
+      startsAt: appointment.startsAt,
+    });
+  } catch (notifyError) {
+    console.error('Failed to send cancellation notice', notifyError);
+  }
+
+  return { ...appointment, status: 'CANCELLED' as const };
+}
+
+export async function cancelAppointmentByReference(
+  prisma: PrismaClient,
+  reference: string,
+  notifier: Notifier = consoleNotifier,
+) {
+  const appointment = await prisma.appointment.findUnique({
+    where: { reference },
+    include: { branch: { select: { name: true } }, service: { select: { name: true } } },
+  });
+  if (!appointment) {
+    throw new NotFoundError('Appointment not found', 'APPOINTMENT_NOT_FOUND');
+  }
+  return cancelFetchedAppointment(prisma, appointment, notifier);
+}
+
 export async function getAppointmentByReference(prisma: PrismaClient, reference: string) {
   const appointment = await prisma.appointment.findUnique({
     where: { reference },

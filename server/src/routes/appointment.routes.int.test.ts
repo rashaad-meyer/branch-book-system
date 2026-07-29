@@ -219,8 +219,14 @@ describe('POST /api/v1/appointments — idempotency', () => {
     const startsAt = slotAt(22, '09:00');
 
     const [a, b] = await Promise.all([
-      request(app).post('/api/v1/appointments').set('Idempotency-Key', key).send(bookingBody(startsAt)),
-      request(app).post('/api/v1/appointments').set('Idempotency-Key', key).send(bookingBody(startsAt)),
+      request(app)
+        .post('/api/v1/appointments')
+        .set('Idempotency-Key', key)
+        .send(bookingBody(startsAt)),
+      request(app)
+        .post('/api/v1/appointments')
+        .set('Idempotency-Key', key)
+        .send(bookingBody(startsAt)),
     ]);
 
     // The loser is either told the request is in progress (409) or replays the
@@ -258,6 +264,62 @@ describe('GET /api/v1/appointments/:reference', () => {
 
   it('returns 404 for an unknown reference', async () => {
     const res = await request(app).get('/api/v1/appointments/ABCDEFGHJK');
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('POST /api/v1/appointments/:reference/cancel', () => {
+  it('cancels a booking and frees the slot for rebooking', async () => {
+    const startsAt = slotAt(10, '09:00');
+    const created = await request(app).post('/api/v1/appointments').send(bookingBody(startsAt));
+    expect(created.status).toBe(201);
+    const reference = asAppointment(created.body).reference;
+
+    const cancelled = await request(app).post(`/api/v1/appointments/${reference}/cancel`);
+    expect(cancelled.status).toBe(200);
+    expect(asAppointment(cancelled.body).status).toBe('CANCELLED');
+
+    // The partial exclusion constraint no longer counts the cancelled row,
+    // so the same slot books again.
+    const rebooked = await request(app)
+      .post('/api/v1/appointments')
+      .send(bookingBody(startsAt, { customerEmail: 'second@example.com' }));
+    expect(rebooked.status).toBe(201);
+  });
+
+  it('rejects cancelling an already-cancelled booking with 409', async () => {
+    const created = await request(app)
+      .post('/api/v1/appointments')
+      .send(bookingBody(slotAt(10, '12:00')));
+    const reference = asAppointment(created.body).reference;
+
+    await request(app).post(`/api/v1/appointments/${reference}/cancel`);
+    const again = await request(app).post(`/api/v1/appointments/${reference}/cancel`);
+    expect(again.status).toBe(409);
+    expect(asError(again.body).error.code).toBe('ALREADY_CANCELLED');
+  });
+
+  it('rejects cancelling a past appointment with 422', async () => {
+    // Past bookings can't be created through the API, so insert directly.
+    const past = await prisma.appointment.create({
+      data: {
+        branchId,
+        serviceId,
+        reference: 'PASTREF234',
+        customerName: 'Time Traveller',
+        customerEmail: 'past@example.com',
+        startsAt: new Date(Date.now() - 86_400_000),
+        endsAt: new Date(Date.now() - 86_400_000 + 30 * 60_000),
+      },
+    });
+
+    const res = await request(app).post(`/api/v1/appointments/${past.reference}/cancel`);
+    expect(res.status).toBe(422);
+    expect(asError(res.body).error.code).toBe('TOO_LATE_TO_CANCEL');
+  });
+
+  it('returns 404 for an unknown reference', async () => {
+    const res = await request(app).post('/api/v1/appointments/ABCDEFGHJK/cancel');
     expect(res.status).toBe(404);
   });
 });

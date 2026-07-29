@@ -38,9 +38,7 @@ export function fingerprintRequest(params: Record<string, unknown>): string {
 
 function isUniqueViolation(error: unknown): boolean {
   return (
-    error instanceof Error &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 'P2002'
+    error instanceof Error && 'code' in error && (error as { code?: unknown }).code === 'P2002'
   );
 }
 
