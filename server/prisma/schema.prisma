@@ -85,3 +85,30 @@ model Appointment {
   @@index([customerEmail])
   @@index([branchId, startsAt])
 }
+
+// Stores the outcome of a booking request keyed by a client-supplied
+// Idempotency-Key, so a retried request replays the original response instead
+// of creating a duplicate booking. See lib/idempotency.ts.
+model IdempotencyKey {
+  key String @id
+
+  // SHA-256 of the canonical request params. A key reused with a different
+  // fingerprint is rejected rather than silently replayed.
+  requestHash String
+
+  // 'IN_PROGRESS' while the owning request runs; 'COMPLETED' once the response
+  // has been captured and is safe to replay.
+  status IdempotencyStatus @default(IN_PROGRESS)
+
+  // The captured response, populated on completion.
+  responseStatus Int?
+  responseBody   Json?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+}

@@ -36,7 +36,6 @@ export function createApp(options: AppOptions = {}) {
   app.use('/api/v1', authRouter(options.loginRateLimitMax ?? 10));
   app.use('/api/v1', branchRouter());
   app.use('/api/v1', appointmentRouter());
-  app.use('/api/v1', appointmentRouter());
 
   app.use(errorHandler);
 
