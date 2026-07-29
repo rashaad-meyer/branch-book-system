@@ -1,26 +1,13 @@
 import 'dotenv/config';
 
-import { randomBytes } from 'node:crypto';
-
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 
 import { PrismaClient } from '../src/generated/prisma/client.js';
+import { generateReference } from '../src/lib/reference.js';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
-
-// Unambiguous alphabet (no 0/O, 1/I/L) for human-friendly booking references.
-const REFERENCE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-
-function generateReference(): string {
-  const bytes = randomBytes(10);
-  let code = '';
-  for (const byte of bytes) {
-    code += REFERENCE_ALPHABET[byte % REFERENCE_ALPHABET.length];
-  }
-  return code;
-}
 
 /** Next occurrence of `hour:minute` (branch-local SAST, UTC+2) at least one day out. */
 function upcomingSlot(daysFromNow: number, hour: number, minute = 0): Date {
