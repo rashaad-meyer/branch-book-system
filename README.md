@@ -42,6 +42,23 @@ npm run dev
 
 The client dev server proxies `/api/*` to the backend, so the frontend calls relative URLs.
 
+## Running with Docker
+
+The API ships as a multi-stage image ([server/Dockerfile](server/Dockerfile), built from the
+repo root because of npm workspaces). Compose orchestrates the full backend:
+
+```bash
+docker compose up --build -d api   # db → migrate (one-shot) → api on :4000
+docker compose run --rm migrate npx prisma db seed   # optional: seed demo data
+curl http://localhost:4000/api/v1/health
+docker compose down                # stop everything
+```
+
+`migrate` applies pending Prisma migrations and exits before the API starts, so a fresh
+checkout boots to a working system with one command. `JWT_SECRET` and `CORS_ORIGIN` have
+dev defaults in the compose file — override them via environment variables for anything
+beyond local use.
+
 ## Scripts (run from the root)
 
 | Script              | What it does                    |
