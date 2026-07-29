@@ -70,3 +70,7 @@ export type CreateAppointmentSchema = z.infer<typeof createAppointmentSchema>;
 export const referenceParamSchema = z.object({
   reference: z.string().regex(/^[A-HJ-NP-Z2-9]{10}$/, 'Invalid booking reference'),
 });
+
+// Client-supplied idempotency token (typically a UUID). Optional per request;
+// bounded to keep the primary-key index tight and reject junk headers.
+export const idempotencyKeySchema = z.string().trim().min(1).max(255);
