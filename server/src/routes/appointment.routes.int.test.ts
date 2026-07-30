@@ -321,3 +321,27 @@ describe('POST /api/v1/appointments/:reference/cancel', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('rate limiting', () => {
+  it('returns 429 when the booking limit is exceeded', async () => {
+    const limited = createApp({ bookingRateLimitMax: 1 });
+    await request(limited)
+      .post('/api/v1/appointments')
+      .send(bookingBody(slotAt(11, '09:00')));
+    const res = await request(limited)
+      .post('/api/v1/appointments')
+      .send(bookingBody(slotAt(11, '09:30')));
+
+    expect(res.status).toBe(429);
+    expect(asError(res.body).error.code).toBe('TOO_MANY_REQUESTS');
+  });
+
+  it('returns 429 when the lookup limit is exceeded (enumeration guard)', async () => {
+    const limited = createApp({ lookupRateLimitMax: 1 });
+    await request(limited).get('/api/v1/appointments/ABCDEFGHJK');
+    const res = await request(limited).get('/api/v1/appointments/ABCDEFGHJK');
+
+    expect(res.status).toBe(429);
+    expect(asError(res.body).error.code).toBe('TOO_MANY_REQUESTS');
+  });
+});

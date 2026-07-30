@@ -13,8 +13,10 @@ import { staffRouter } from './routes/staff.routes.js';
 import { errorHandler } from './middleware/error-handler.js';
 
 export interface AppOptions {
-  /** Override the login rate limit — used by tests to trigger 429 quickly. */
+  /** Override rate limits — used by tests to trigger 429 quickly. */
   loginRateLimitMax?: number;
+  bookingRateLimitMax?: number;
+  lookupRateLimitMax?: number;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -36,7 +38,13 @@ export function createApp(options: AppOptions = {}) {
   app.use('/api/v1', healthRouter());
   app.use('/api/v1', authRouter(options.loginRateLimitMax ?? 10));
   app.use('/api/v1', branchRouter());
-  app.use('/api/v1', appointmentRouter());
+  app.use(
+    '/api/v1',
+    appointmentRouter({
+      bookingRateLimitMax: options.bookingRateLimitMax,
+      lookupRateLimitMax: options.lookupRateLimitMax,
+    }),
+  );
   app.use('/api/v1', staffRouter());
 
   app.use(errorHandler);

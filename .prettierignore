@@ -4,3 +4,4 @@ build/
 package-lock.json
 server/prisma/migrations/
 server/src/generated/
+server/coverage/
