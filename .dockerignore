@@ -1,7 +1,7 @@
 **/node_modules
 **/dist
 **/.env
+**/coverage
 .git
-client
 server/src/generated
 *.md

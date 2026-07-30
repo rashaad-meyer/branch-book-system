@@ -59,4 +59,6 @@ jobs:
         run: npm run build
 
       - name: Docker image builds
-        run: docker build -f server/Dockerfile .
+        run: |
+          docker build -f server/Dockerfile .
+          docker build -f client/Dockerfile .

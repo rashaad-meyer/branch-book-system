@@ -4,6 +4,27 @@ A system for customers to schedule branch appointments with simulated confirmati
 Guests book without an account and manage their booking with an unguessable reference
 code; branch staff log in to view and manage their branch's schedule.
 
+## Quick start
+
+Requires only Docker:
+
+```bash
+docker compose up --build -d web                     # db → migrations → API → web UI
+docker compose run --rm migrate npx prisma db seed   # demo branches, services, staff
+```
+
+Then open **http://localhost:5173** (API: http://localhost:4000/api/v1/health).
+
+**Demo staff logins** (password `Password123!`):
+
+| Email                            | Branch        |
+| -------------------------------- | ------------- |
+| `staff.capetown@example.com`     | Cape Town CBD |
+| `staff.stellenbosch@example.com` | Stellenbosch  |
+
+Book an appointment as a guest on the home page, then sign in at `/staff` to see it on
+the branch schedule. Simulated confirmation emails appear in `docker compose logs api`.
+
 ## Stack
 
 - **Backend:** Node.js, Express 5, TypeScript, Prisma, PostgreSQL
@@ -46,19 +67,15 @@ The client dev server proxies `/api/*` to the backend, so the frontend calls rel
 
 ## Running with Docker
 
-The API ships as a multi-stage image ([server/Dockerfile](server/Dockerfile), built from the
-repo root because of npm workspaces). Compose orchestrates the full backend:
+Both apps ship as multi-stage images built from the repo root (npm workspaces):
+[server/Dockerfile](server/Dockerfile) (lean non-root Node runtime) and
+[client/Dockerfile](client/Dockerfile) (Vite build served by nginx, which proxies `/api`
+to the API container — same-origin, so the SPA needs no baked-in URLs and no CORS).
 
-```bash
-docker compose up --build -d api   # db → migrate (one-shot) → api on :4000
-docker compose run --rm migrate npx prisma db seed   # optional: seed demo data
-curl http://localhost:4000/api/v1/health
-docker compose down                # stop everything
-```
-
-`migrate` applies pending Prisma migrations and exits before the API starts, so a fresh
-checkout boots to a working system with one command. `JWT_SECRET` and `CORS_ORIGIN` have
-dev defaults in the compose file — override them via environment variables for anything
+Compose orchestrates the full stack: `db` (healthchecked) → `migrate` (one-shot
+`prisma migrate deploy`) → `api` (:4000, healthchecked) → `web` (:5173). See Quick start
+above; `docker compose down` stops everything. `JWT_SECRET` and `CORS_ORIGIN` have dev
+defaults in the compose file — override them via environment variables for anything
 beyond local use.
 
 ## Scripts (run from the root)
@@ -178,13 +195,19 @@ npm test                              # from the root
 npm run test:watch --workspace server # watch mode
 ```
 
-The suite (49 tests, ~92% line coverage via `npm run test:coverage --workspace server`)
-combines unit tests for the availability calculator with supertest integration tests
-against the real compose Postgres — deliberately unmocked, since the exclusion
-constraint is the system under test. Highlights: the concurrent same-slot race
-(exactly one 201, one 409), idempotent replay under racing duplicates,
-cancel-then-rebook freeing a slot, staff branch isolation, and rate-limit 429s.
-Integration tests require the database: `npm run db:up` first.
+**Server** (49 tests, ~92% line coverage via `npm run test:coverage --workspace server`):
+unit tests for the availability calculator plus supertest integration tests against the
+real compose Postgres — deliberately unmocked, since the exclusion constraint is the
+system under test. Highlights: the concurrent same-slot race (exactly one 201, one 409),
+idempotent replay under racing duplicates, cancel-then-rebook freeing a slot, staff
+branch isolation, and rate-limit 429s. Integration tests require the database:
+`npm run db:up` first.
+
+**Client** (12 tests, vitest + Testing Library, jsdom): the API wrapper's error-envelope
+mapping and 401 token-clearing, branch-local time formatting (incl. DST zones), booking
+reference validation, and a full booking-flow walkthrough with mocked fetch — branch →
+service → slot grid in branch time → details → confirmation route, asserting the request
+payload and `Idempotency-Key` header. `npm test` runs both suites.
 
 CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs lint, typecheck, tests
 against a Postgres service container, the workspace builds, and the Docker image build
