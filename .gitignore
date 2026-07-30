@@ -18,3 +18,6 @@ Thumbs.db
 
 # prisma generated client
 server/src/generated/
+
+# coverage output
+server/coverage/
