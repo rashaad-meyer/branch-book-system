@@ -210,11 +210,7 @@ describe('POST /api/v1/appointments — idempotency', () => {
     expect(asError(reused.body).error.code).toBe('IDEMPOTENCY_KEY_REUSED');
   });
 
-  // QUARANTINED: passes in isolation but intermittently returns 501 (~2%) under
-  // the full suite's concurrent load — a transient we haven't root-caused. The
-  // sequential replay above covers the dominant client-retry case; concurrent
-  // same-key replay is tracked as a follow-up. See PR description.
-  it.skip('never double-books when two requests share a key and race', async () => {
+  it('never double-books when two requests share a key and race', async () => {
     const key = newIdempotencyKey();
     const startsAt = slotAt(22, '09:00');
 
@@ -230,9 +226,11 @@ describe('POST /api/v1/appointments — idempotency', () => {
     ]);
 
     // The loser is either told the request is in progress (409) or replays the
-    // winner's 201 — never a 500, and never a second booking.
+    // winner's 201 — never a 500, and never a second booking. The message
+    // captures the full response so any future flake is diagnosable from CI
+    // output alone.
     for (const res of [a, b]) {
-      expect([201, 409]).toContain(res.status);
+      expect([201, 409], `got ${res.status}: ${JSON.stringify(res.body)}`).toContain(res.status);
       if (res.status === 409) {
         expect(asError(res.body).error.code).toBe('IDEMPOTENCY_IN_PROGRESS');
       }
