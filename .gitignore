@@ -21,4 +21,9 @@ server/src/generated/
 
 # coverage output
 server/coverage/
+
+# playwright
+test-results/
+playwright-report/
+blob-report/
 scratchpad
