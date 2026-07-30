@@ -94,6 +94,20 @@ require a Bearer JWT from `/auth/login`.
 
 Errors use a consistent envelope: `{ "error": { "code", "message", "details?" } }`.
 
+## Frontend
+
+React 19 + TypeScript + Tailwind v4, with TanStack Query for server state and React Router
+for navigation. Pages:
+
+- **Book** (`/`) — branch → service → date → live slot grid (shown in branch-local time) →
+  details → confirmation. Booking submits with a payload-stable `Idempotency-Key`, and a
+  `SLOT_TAKEN` conflict clears the selection and refreshes availability.
+- **Booking detail** (`/appointments/:reference`) — confirmation banner (simulated email),
+  full details, cancel with slot release.
+- **Find booking** (`/find`) — reference lookup.
+- **Staff** (`/staff`) — JWT-guarded branch schedule for any date with per-appointment
+  cancel; expired sessions redirect to login automatically.
+
 ## Design decisions
 
 **Double-booking is prevented by the database, not the application.** Appointments carry a
