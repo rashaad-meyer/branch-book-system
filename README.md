@@ -80,16 +80,17 @@ beyond local use.
 
 ## Scripts (run from the root)
 
-| Script              | What it does                    |
-| ------------------- | ------------------------------- |
-| `npm run dev`       | Run server and client together  |
-| `npm run build`     | Build both workspaces           |
-| `npm run lint`      | Lint both workspaces            |
-| `npm run typecheck` | Typecheck both workspaces       |
-| `npm run format`    | Format everything with Prettier |
-| `npm run db:up`     | Start the PostgreSQL container  |
-| `npm run db:down`   | Stop the PostgreSQL container   |
-| `npm test`          | Run the server test suite       |
+| Script              | What it does                     |
+| ------------------- | -------------------------------- |
+| `npm run dev`       | Run server and client together   |
+| `npm run build`     | Build both workspaces            |
+| `npm run lint`      | Lint both workspaces             |
+| `npm run typecheck` | Typecheck both workspaces        |
+| `npm run format`    | Format everything with Prettier  |
+| `npm run db:up`     | Start the PostgreSQL container   |
+| `npm run db:down`   | Stop the PostgreSQL container    |
+| `npm test`          | Run the server test suite        |
+| `npm run test:e2e`  | Playwright E2E (needs the stack) |
 
 ## API
 
@@ -208,6 +209,17 @@ mapping and 401 token-clearing, branch-local time formatting (incl. DST zones), 
 reference validation, and a full booking-flow walkthrough with mocked fetch — branch →
 service → slot grid in branch time → details → confirmation route, asserting the request
 payload and `Idempotency-Key` header. `npm test` runs both suites.
+
+**End-to-end** (1 test, [Playwright](https://playwright.dev)): the journey that has to
+work — a guest books a slot in a real browser, then the branch's staff member logs in and
+finds that exact reference on their schedule. Nothing is stubbed: browser → nginx →
+Express → Prisma → Postgres → JWT auth. It needs the seeded stack from
+[Quick start](#quick-start) running:
+
+```bash
+npm run test:e2e:install   # one-off: download the Chromium build
+npm run test:e2e           # against http://localhost:5173 (override with E2E_BASE_URL)
+```
 
 CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs lint, typecheck, tests
 against a Postgres service container, the workspace builds, and the Docker image build
