@@ -7,7 +7,17 @@ import { timeSlots, findAvailableSlots, zonedWallTimeToUtc } from '../lib/availa
 const DAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
 export async function listBranches(prisma: PrismaClient) {
-  const branches = await prisma.branch.findMany();
+  // Services are included so the client can build the booking form without a
+  // second round-trip; the catalog is small (a handful of rows per branch).
+  const branches = await prisma.branch.findMany({
+    include: {
+      services: {
+        select: { id: true, name: true, durationMinutes: true },
+        orderBy: { name: 'asc' },
+      },
+    },
+    orderBy: { name: 'asc' },
+  });
   return branches;
 }
 
