@@ -224,3 +224,26 @@ npm run test:e2e           # against http://localhost:5173 (override with E2E_BA
 CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs lint, typecheck, tests
 against a Postgres service container, the workspace builds, and the Docker image build
 on every PR.
+
+## Manual testing
+
+A five-minute tour of the interesting behavior, using the seeded stack from
+[Quick start](#quick-start):
+
+1. **Book as a guest** — pick Cape Town CBD, a service, and a weekday: slots run
+   08:00–17:00 in branch time. Book one; you land on a confirmation with a 10-character
+   reference, and the simulated email appears in `docker compose logs api`.
+2. **See the slot disappear** — return to the booking page with the same
+   branch/service/date: your slot is gone, adjacent slots remain (half-open ranges).
+3. **Race for a slot** — open two tabs, select the same slot in both, book in each:
+   the first succeeds, the second gets a friendly "slot just taken" error and a
+   refreshed grid. This is the database exclusion constraint arbitrating — see
+   [Design decisions](#design-decisions).
+4. **Branch rules** — Stellenbosch on a Saturday shows no slots (closed); Cape Town
+   Saturdays end at noon; a 60-minute service's last slot is 16:00, not 16:30.
+5. **Find & cancel** — look up the booking by reference under _Find booking_, cancel
+   it, then rebook the same slot — cancellation really frees it.
+6. **Staff view** — sign in (credentials in [Quick start](#quick-start)) to see the
+   branch's day, including cancelled bookings struck through; cancel one from the
+   dashboard. Logging in as the other branch's staff shows none of these bookings
+   (branch isolation).
