@@ -53,8 +53,8 @@ npm install
 npm run db:up
 
 # 3. Set up the server environment
-#    server/.env is already configured for the compose database;
-#    see server/.env.example for the expected variables.
+#    The defaults already point at the compose database.
+cp server/.env.example server/.env
 
 # 4. Generate the Prisma client
 npm run prisma:generate --workspace server
