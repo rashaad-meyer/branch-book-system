@@ -1,0 +1,3 @@
+# All text files are LF in the repo AND in working copies, on every OS.
+# This overrides any local core.autocrlf setting.
+* text=auto eol=lf
